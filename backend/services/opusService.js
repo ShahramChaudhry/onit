@@ -205,11 +205,12 @@ class OpusService {
 
   /**
    * Save output from API results to outputs/ folder
-   * Handles: text (summary/string), list (array), or full results
+   * Handles: user_notification_messages, summary, tasks, or full results
    */
   async saveTextOutput(jobExecutionId, results) {
     await ensureDir(OUTPUTS_DIR);
     const r = results?.results || results || {};
+    const notifications = r.user_notification_messages;
     const summary = r.summary;
     const data = r.data;
     const tasks = r.tasks;
@@ -220,12 +221,18 @@ class OpusService {
       : Array.isArray(r) ? r : null;
 
     let textContent = null;
-    if (typeof summary === 'string') {
+    if (notifications && Array.isArray(notifications) && notifications.length > 0) {
+      // Format user_notification_messages: one section per user
+      textContent = notifications.map((n, i) => {
+        const uid = n.user_id || `User ${i + 1}`;
+        const msg = n.notification_message || '';
+        return `=== ${uid} ===\n${msg}`;
+      }).join('\n\n');
+    } else if (typeof summary === 'string') {
       textContent = summary;
     } else if (typeof data === 'string') {
       textContent = data;
     } else if (list && list.length > 0) {
-      // Format list output: one item per line (stringify objects)
       textContent = list.map((item, i) => {
         const s = typeof item === 'object' ? JSON.stringify(item) : String(item);
         return `${i + 1}. ${s}`;
@@ -237,7 +244,7 @@ class OpusService {
       const txtPath = path.join(OUTPUTS_DIR, `${jobExecutionId}_output.txt`);
       await fs.writeFile(txtPath, textContent, 'utf8');
       savedPaths.push({ localPath: txtPath, filename: `${jobExecutionId}_output.txt`, type: 'text' });
-      console.log('[Opus] Saved list/text output:', txtPath);
+      console.log('[Opus] Saved text output:', txtPath);
     }
     // Always save full results as JSON
     const jsonPath = path.join(OUTPUTS_DIR, `${jobExecutionId}_results.json`);
@@ -435,7 +442,7 @@ class OpusService {
       }
       const outputFiles = r.outputFiles || results?.results?.outputFiles || [];
       const savedOutputs = await this.saveOutputFiles(jobExecutionId, outputFiles);
-      const savedTextOutputs = await this.saveTextOutput(jobExecutionId, results);
+      const savedTextOutputs = await this.saveTextOutput(jobExecutionId, r);
       const allOutputs = [...savedOutputs, ...savedTextOutputs];
 
       return {

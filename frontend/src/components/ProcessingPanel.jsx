@@ -57,7 +57,18 @@ function ProcessingPanel({ status, results }) {
             <span>Results</span>
           </div>
           <div className="results-content">
-            <pre>{JSON.stringify(results, null, 2)}</pre>
+            {results.user_notification_messages?.length > 0 ? (
+              <div className="notification-list">
+                {results.user_notification_messages.map((n, i) => (
+                  <div key={i} className="notification-card">
+                    <div className="notification-user">{n.user_id}</div>
+                    <div className="notification-message">{n.notification_message}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <pre>{JSON.stringify(results, null, 2)}</pre>
+            )}
           </div>
         </div>
       )}
