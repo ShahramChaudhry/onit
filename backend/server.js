@@ -7,6 +7,11 @@ import messagesRoutes from './routes/messages.js';
 
 dotenv.config();
 
+if (!process.env.OPUS_API_KEY) {
+  console.warn('⚠️  OPUS_API_KEY not set in .env — PDF/Opus API calls will fail with 401');
+  console.warn('   Add OPUS_API_KEY=your_x_service_key to .env and restart');
+}
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 

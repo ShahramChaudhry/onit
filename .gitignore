@@ -10,6 +10,10 @@ frontend/node_modules/
 frontend/dist/
 frontend/build/
 
+# Opus job files (uploads + outputs per HOW_TO_SUBMIT_JOB)
+uploads/
+outputs/
+
 # Logs
 *.log
 npm-debug.log*

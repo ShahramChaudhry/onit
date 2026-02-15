@@ -13,6 +13,10 @@ function App() {
   const [processing, setProcessing] = useState(false);
   const [jobStatus, setJobStatus] = useState(null);
   const [results, setResults] = useState(null);
+  const [pdfFile, setPdfFile] = useState(null);
+  const [pdfProcessing, setPdfProcessing] = useState(false);
+  const [pdfJobStatus, setPdfJobStatus] = useState(null);
+  const [pdfResults, setPdfResults] = useState(null);
 
   // Load sample data
   const loadSampleData = async () => {
@@ -106,6 +110,41 @@ function App() {
     }
   };
 
+  // Process PDF through Opus workflow (EJ8PrEHf8b4zNenS)
+  const processPdf = async () => {
+    if (!pdfFile) {
+      alert('Please select a PDF file first.');
+      return;
+    }
+
+    setPdfProcessing(true);
+    setPdfJobStatus({ status: 'INITIATING', message: 'Uploading PDF...' });
+
+    try {
+      const formData = new FormData();
+      formData.append('pdf', pdfFile);
+
+      const response = await axios.post('/api/opus/process-pdf', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      setPdfJobStatus({
+        status: 'COMPLETED',
+        message: 'Processing complete!',
+        jobExecutionId: response.data.jobExecutionId
+      });
+      setPdfResults(response.data.results);
+    } catch (error) {
+      console.error('Error processing PDF:', error);
+      setPdfJobStatus({
+        status: 'FAILED',
+        message: error.response?.data?.message || 'PDF processing failed'
+      });
+    } finally {
+      setPdfProcessing(false);
+    }
+  };
+
   // Clear all data
   const clearData = async () => {
     try {
@@ -146,7 +185,7 @@ function App() {
             onClick={processMessages}
             disabled={processing || messages.length === 0}
           >
-            {processing ? 'Processing...' : 'Process with Opus AI'}
+            {processing ? 'Processing...' : 'Process Messages with Opus'}
           </button>
           <button 
             className="btn btn-secondary" 
@@ -154,6 +193,45 @@ function App() {
           >
             Clear All
           </button>
+        </div>
+
+        {/* PDF Upload Section - Workflow EJ8PrEHf8b4zNenS */}
+        <div className="card pdf-upload-section" style={{ marginBottom: '2rem' }}>
+          <div className="card-header">
+            <h2 className="card-title">PDF Processing (Opus Workflow)</h2>
+            <span className="badge badge-primary">Workflow: EJ8PrEHf8b4zNenS</span>
+          </div>
+          <div className="action-bar">
+            <label className="btn btn-primary" style={{ cursor: 'pointer', margin: 0 }}>
+              <input
+                type="file"
+                accept=".pdf,application/pdf"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  setPdfFile(file || null);
+                  if (file) {
+                    setPdfResults(null);
+                    setPdfJobStatus(null);
+                  }
+                }}
+                style={{ display: 'none' }}
+              />
+              {pdfFile ? `Selected: ${pdfFile.name}` : 'Choose PDF File'}
+            </label>
+            <button
+              className="btn btn-success"
+              onClick={processPdf}
+              disabled={pdfProcessing || !pdfFile}
+            >
+              {pdfProcessing ? 'Processing PDF...' : 'Process PDF with Opus'}
+            </button>
+          </div>
+          {pdfJobStatus && (
+            <ProcessingPanel 
+              status={pdfJobStatus} 
+              results={pdfResults}
+            />
+          )}
         </div>
 
         {jobStatus && (
