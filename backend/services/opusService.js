@@ -423,8 +423,17 @@ class OpusService {
       const results = await this.pollJobUntilComplete(jobExecutionId);
 
       // Step 7: Save outputs to outputs/ folder
-      const r = results?.results || {};
-      const outputFiles = r.outputFiles || [];
+      // Opus returns { jobResultsPayloadSchema: { varName: { value, ... } } } - extract values for display
+      const outputSchema = results?.jobResultsPayloadSchema || results?.results || {};
+      const r = {};
+      for (const [key, obj] of Object.entries(outputSchema)) {
+        if (obj && typeof obj === 'object' && 'value' in obj) {
+          r[key] = obj.value;
+        } else {
+          r[key] = obj;
+        }
+      }
+      const outputFiles = r.outputFiles || results?.results?.outputFiles || [];
       const savedOutputs = await this.saveOutputFiles(jobExecutionId, outputFiles);
       const savedTextOutputs = await this.saveTextOutput(jobExecutionId, results);
       const allOutputs = [...savedOutputs, ...savedTextOutputs];
